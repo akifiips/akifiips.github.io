@@ -166,6 +166,17 @@ a.sidebar-nav-item:focus {
   }
 }
 
+/* Custom Sidebar Width Override */
+@media (min-width: 48em) {
+  .sidebar {
+    width: 24rem; /* Increased from default 18rem */
+  }
+  .content {
+    max-width: 48rem;
+    margin-left: 24rem; /* Must match the sidebar width above */
+  }
+}
+
 
 
 /*
