@@ -150,6 +150,12 @@ html, body, h1, h2, h3, h4, h5, h6, p, a, .sidebar, .sidebar-about h1 {
   }
 }
 
+/* 3. Fix Sidebar Cut-off on Small Screens */
+.sidebar {
+  overflow-y: auto !important; /* Adds a scrollbar ONLY if the screen is too short */
+  -webkit-overflow-scrolling: touch; /* Makes scrolling smooth on touchscreens */
+  padding-top: 2rem; /* Ensures the picture always has breathing room at the top */
+}
 
 /*
  * Themes
