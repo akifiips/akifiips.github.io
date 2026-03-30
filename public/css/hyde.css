@@ -30,10 +30,15 @@ html, body, h1, h2, h3, h4, h5, h6, p, a, .sidebar, .sidebar-about h1 {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 28rem; /* Reduced from 28rem to look proportionate on laptops */
+    width: 22rem; 
     text-align: left;
-    overflow-y: auto; /* Acts as a safety net ONLY if screen is incredibly small */
+    overflow-y: auto; 
     -webkit-overflow-scrolling: touch;
+    
+    /* The Flexbox Magic: Centers everything vertically */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 }
 
@@ -45,7 +50,7 @@ html, body, h1, h2, h3, h4, h5, h6, p, a, .sidebar, .sidebar-about h1 {
 /* About section */
 .sidebar-about h1 {
   color: #fff;
-  margin-top: 0;
+  margin-top: 4;
   font-size: 2.0rem; /* Reduced from 3.25rem so the title doesn't force a scroll */
   line-height: 1.2;
 }
