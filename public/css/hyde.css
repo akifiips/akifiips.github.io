@@ -1,39 +1,39 @@
-html {
-  font-family: "PT Sans", Helvetica, Arial, sans-serif;
-}
-@media (min-width: 48em) {
-  html {
-    font-size: 16px;
-  }
-}
-@media (min-width: 58em) {
-  html {
-    font-size: 20px;
-  }
+/*
+ * Global Font Overrides
+ * Applies Book Antiqua across the entire site
+ */
+html, body, h1, h2, h3, h4, h5, h6, p, a, .sidebar, .sidebar-about h1 {
+  font-family: "Book Antiqua", Palatino, "Palatino Linotype", Georgia, serif !important;
 }
 
+@media (min-width: 48em) {
+  html { font-size: 16px; }
+}
+@media (min-width: 58em) {
+  html { font-size: 19px; } /* Slightly reduced base font so everything fits better */
+}
 
 /*
  * Sidebar
- *
- * Flexible banner for housing site name, intro, and "footer" content. Starts
- * out above content in mobile and later moves to the side with wider viewports.
+ * Flexible banner for housing site name, intro, and "footer" content.
  */
-
 .sidebar {
   text-align: center;
   padding: 2rem 1rem;
   color: rgba(255,255,255,.5);
   background-color: #827D7D;
 }
+
 @media (min-width: 48em) {
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
-    width: 18rem;
+    width: 22rem; /* Reduced from 28rem to look proportionate on laptops */
     text-align: left;
+    overflow-y: auto; /* Acts as a safety net ONLY if screen is incredibly small */
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -46,8 +46,8 @@ html {
 .sidebar-about h1 {
   color: #fff;
   margin-top: 0;
-  font-family: "Abril Fatface", serif;
-  font-size: 3.25rem;
+  font-size: 2.25rem; /* Reduced from 3.25rem so the title doesn't force a scroll */
+  line-height: 1.2;
 }
 
 /* Sidebar nav */
@@ -66,182 +66,62 @@ a.sidebar-nav-item:focus {
   font-weight: bold;
 }
 
-/* Sticky sidebar
- *
- * Add the `sidebar-sticky` class to the sidebar's container to affix it the
- * contents to the bottom of the sidebar in tablets and up.
+/* Sticky sidebar override 
+ * Forces content to start near the top instead of gluing to the bottom
  */
-
 @media (min-width: 48em) {
   .sidebar-sticky {
-    position: absolute;
-    right:  1rem;
-    bottom: 1rem;
-    left:   1rem;
+    position: static !important; 
+    padding-top: 2rem; 
+    padding-bottom: 1rem;
   }
 }
 
-
-/* Container
- *
- * Align the contents of the site above the proper threshold with some margin-fu
- * with a 25%-wide `.sidebar`.
+/* * Main Content Container
  */
-
 .content {
-  padding-top:    4rem;
+  padding-top: 4rem;
   padding-bottom: 4rem;
 }
 
 @media (min-width: 48em) {
   .content {
-    max-width: 38rem;
-    margin-left: 20rem;
+    max-width: 46rem;
+    margin-left: 26rem; /* 22rem sidebar + 4rem gap */
     margin-right: 2rem;
   }
 }
 
 @media (min-width: 64em) {
   .content {
-    margin-left: 22rem;
+    margin-left: 28rem; /* 22rem sidebar + 6rem gap on larger screens */
     margin-right: 4rem;
   }
 }
 
-
 /*
- * Reverse layout
- *
- * Flip the orientation of the page by placing the `.sidebar` on the right.
+ * Themes (Colors)
  */
+.theme-base-08 .sidebar { background-color: #ac4142; }
+.theme-base-08 .content a, .theme-base-08 .related-posts li a:hover { color: #ac4142; }
 
-@media (min-width: 48em) {
-  .layout-reverse .sidebar {
-    left: auto;
-    right: 0;
-  }
-  .layout-reverse .content {
-    margin-left: 2rem;
-    margin-right: 20rem;
-  }
-}
+.theme-base-09 .sidebar { background-color: #d28445; }
+.theme-base-09 .content a, .theme-base-09 .related-posts li a:hover { color: #d28445; }
 
-@media (min-width: 64em) {
-  .layout-reverse .content {
-    margin-left: 4rem;
-    margin-right: 22rem;
-  }
-}
+.theme-base-0a .sidebar { background-color: #f4bf75; }
+.theme-base-0a .content a, .theme-base-0a .related-posts li a:hover { color: #f4bf75; }
 
+.theme-base-0b .sidebar { background-color: #90a959; }
+.theme-base-0b .content a, .theme-base-0b .related-posts li a:hover { color: #90a959; }
 
-/* 1. Force Book Antiqua Font Globally */
-html, body, h1, h2, h3, h4, h5, h6, p, a, .sidebar, .sidebar-about h1 {
-  font-family: "Book Antiqua", Palatino, "Palatino Linotype", Georgia, serif !important;
-}
+.theme-base-0c .sidebar { background-color: #75b5aa; }
+.theme-base-0c .content a, .theme-base-0c .related-posts li a:hover { color: #75b5aa; }
 
-/* 2. Custom Layout: Wider Sidebar & Increased Gap */
-@media (min-width: 48em) {
-  .sidebar {
-    width: 28rem; /* The width of the black sidebar */
-  }
-  .content {
-    max-width: 48rem;
-    margin-left: 36rem; /* Creates a 4rem gap between the sidebar and your text */
-  }
-}
+.theme-base-0d .sidebar { background-color: #6a9fb5; }
+.theme-base-0d .content a, .theme-base-0d .related-posts li a:hover { color: #6a9fb5; }
 
-/* 3. Fix Sidebar Cut-off & Anchoring on Small Screens */
-@media (min-width: 48em) {
-  .sidebar {
-    overflow-y: auto !important; 
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* This forces the content to start at the top, not the bottom */
-  .sidebar-sticky {
-    position: static !important; 
-    padding-top: 3rem; 
-    padding-bottom: 2rem;
-  }
-}
+.theme-base-0e .sidebar { background-color: #aa759f; }
+.theme-base-0e .content a, .theme-base-0e .related-posts li a:hover { color: #aa759f; }
 
-/*
- * Themes
- *
- * As of v1.1, Hyde includes optional themes to color the sidebar and links
- * within blog posts. To use, add the class of your choosing to the `body`.
- */
-
-/* Base16 (http://chriskempson.github.io/base16/#default) */
-
-/* Red */
-.theme-base-08 .sidebar {
-  background-color: #ac4142;
-}
-.theme-base-08 .content a,
-.theme-base-08 .related-posts li a:hover {
-  color: #ac4142;
-}
-
-/* Orange */
-.theme-base-09 .sidebar {
-  background-color: #d28445;
-}
-.theme-base-09 .content a,
-.theme-base-09 .related-posts li a:hover {
-  color: #d28445;
-}
-
-/* Yellow */
-.theme-base-0a .sidebar {
-  background-color: #f4bf75;
-}
-.theme-base-0a .content a,
-.theme-base-0a .related-posts li a:hover {
-  color: #f4bf75;
-}
-
-/* Green */
-.theme-base-0b .sidebar {
-  background-color: #90a959;
-}
-.theme-base-0b .content a,
-.theme-base-0b .related-posts li a:hover {
-  color: #90a959;
-}
-
-/* Cyan */
-.theme-base-0c .sidebar {
-  background-color: #75b5aa;
-}
-.theme-base-0c .content a,
-.theme-base-0c .related-posts li a:hover {
-  color: #75b5aa;
-}
-
-/* Blue */
-.theme-base-0d .sidebar {
-  background-color: #6a9fb5;
-}
-.theme-base-0d .content a,
-.theme-base-0d .related-posts li a:hover {
-  color: #6a9fb5;
-}
-
-/* Magenta */
-.theme-base-0e .sidebar {
-  background-color: #aa759f;
-}
-.theme-base-0e .content a,
-.theme-base-0e .related-posts li a:hover {
-  color: #aa759f;
-}
-
-/* Brown */
-.theme-base-0f .sidebar {
-  background-color: #8f5536;
-}
-.theme-base-0f .content a,
-.theme-base-0f .related-posts li a:hover {
-  color: #8f5536;
-}
+.theme-base-0f .sidebar { background-color: #8f5536; }
+.theme-base-0f .content a, .theme-base-0f .related-posts li a:hover { color: #8f5536; }
