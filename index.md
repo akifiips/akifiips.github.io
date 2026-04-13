@@ -4,7 +4,7 @@ title: About Me
 ---
 # About Me
 
-### Hi, I’m Akif Mustafa. Welcome to my personal website :blush:.
+### Hi, I’m Akif Mustafa. Welcome to my personal website 😊.
 
 I hold a PhD in Biostatistics and my work lies at the intersection of statistical theory, computational methods, and practical decision-making in drug development, with a focus on improving efficiency, interpretability, and robustness of clinical evidence generation.
 
@@ -17,7 +17,7 @@ While I have applied numerous methodologies throughout my career, I am never shy
 That process is still ongoing—and I hope it always will be. I consider myself a lifelong student of statistics.
 
 ## Current Work & Future Focus
-Recently, I have been involved in work related to estimand strategies, missing data imputation, and adaptive designs in clinical trials. Among these, I have been particularly interested in advancing adaptive design methodologies, given their potential to improve trial efficiency through smaller sample sizes, reduce patient burden, lower costs, and offer ethical advantages by limiting exposure to placebo or ineffective treatments.
+Recently, I have been involved in work related to estimand strategies, missing data imputation, and adaptive designs in clinical trials. Among these, I have been particularly interested in advancing adaptive design methodologies, given their potential to improve trial efficiency through smaller sample sizes, reduced patient burden, lower costs, and offer ethical advantages by limiting exposure to placebo or ineffective treatments.
 
 ## The Bayesian Frontier
 A major driver of these advancements—and a personal area of enthusiasm—is the integration of Bayesian methodology. For advocates of Bayesian statistics, its growing application in clinical trials is a welcome breath of fresh air. It is highly encouraging to see regulatory agencies increasingly acknowledge and embrace these methods, opening new doors for innovative trial execution.
@@ -34,4 +34,4 @@ I usually say I’m 50% Bayesian and 50% frequentist, but honestly, I think, dee
 * Bayesian Methods in clinical trials
 * Bayesian clinical trial design and inference
 
-Outside of work, I like to switch off by riding bikes and spending time in the mountains. If I’m not at work, there’s a good chance I’m out with my bike somewhere in the Western Ghats of India—chasing winding roads, fresh air, and a bit of quiet.
+Outside of work, I like to switch off by riding my beautiful bike and spending time in the mountains. If I’m not at work, there’s a good chance I’m out with my bike somewhere in the Western Ghats of India—chasing winding roads, fresh air, and a bit of quiet.
