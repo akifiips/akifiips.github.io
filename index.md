@@ -8,13 +8,11 @@ title: About Me
 
 I hold a PhD in Biostatistics and my work lies at the intersection of statistical theory, computational methods, and practical decision-making in drug development, with a focus on improving efficiency, interpretability, and robustness of clinical evidence generation.
 
-During my doctoral research, much of my work focused on applying statistical methodologies to derive population health insights from cross-sectional data. Over the course of my PhD, I worked with a wide range of methods, including Propensity Score Matching (PSM), additive and multiplicative interaction analysis, Structural Equation Modelling (SEM), and mediation analysis using the Karlson–Holm–Breen (KHB) method, alongside more traditional approaches such as linear and logistic regression.
+<img src="{{ site.baseurl }}/assets/images/deming.png" style="max-width: 100%; width: 400px; display: block; margin: 2rem auto;">
 
-Before that, during my Master’s, I had the opportunity to work with a variety of other methods where I explored machine learning and data reduction strategies. There, I worked on risk group categorization using Conditional Inference Trees (CTree), evaluated predictor importance through Dominance Analysis, and utilized Factor Analysis and Principal Component Analysis (PCA) for dimensionality reduction and index creation.
+During my doctoral research, much of my work focused on applying statistical methodologies to derive population health insights from cross-sectional data. I used approaches such as Propensity Score Matching, additive and multiplicative interaction analysis, Structural Equation Modelling, mediation analysis via the Karlson–Holm–Breen method, and various regression techniques. Earlier, during my Master’s, I worked with machine learning and data reduction techniques, including Conditional Inference Trees for risk stratification, Dominance Analysis for predictor importance, and Factor Analysis and Principal Component Analysis for dimensionality reduction and index development. This combined training laid the foundation for data analysis, insight generation, and evidence-based decision-making.
 
-While I have applied numerous methodologies throughout my career, I am never shy to admit that I have made my fair share of mistakes along the way. Those errors were challenging in the moment, but that’s part of the process and I have learned a lot from them. 
-
-That process is still ongoing—and I hope it always will be. I consider myself a lifelong student of statistics.
+While I have applied numerous methodologies throughout my career, I am never shy to admit that I have made my fair share of mistakes along the way. Those errors were challenging in the moment, but that’s part of the process and I have learned a lot from them. That process is still ongoing—and I hope it always will be. I consider myself a lifelong student of statistics.
 
 ## Current Work & Future Focus
 Recently, I have been involved in work related to estimand strategies, missing data imputation, and adaptive designs in clinical trials. Among these, I have been particularly interested in advancing adaptive design methodologies, given their potential to improve trial efficiency through smaller sample sizes, reduced patient burden, lower costs, and offer ethical advantages by limiting exposure to placebo or ineffective treatments.
@@ -27,11 +25,5 @@ I usually say I’m 50% Bayesian and 50% frequentist, but honestly, I think, dee
 
 <img src="{{ site.baseurl }}/assets/images/drake.jpg" style="max-width: 100%; width: 400px; display: block; margin: 2rem auto;">
 
-## Research Interests
-* Adaptive designs
-* Interim decision-making
-* Mixed Modelling
-* Bayesian Methods in clinical trials
-* Bayesian clinical trial design and inference
 
 Outside of work, I like to switch off by riding my beautiful bike and spending time in the mountains. If I’m not at work, there’s a good chance I’m out with my bike somewhere in the Western Ghats of India—chasing winding roads, fresh air, and a bit of quiet.
