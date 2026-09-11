@@ -1,0 +1,8 @@
+.Rproj.user/
+.Rhistory
+.RData
+.quarto/
+.sites-runtime/
+node_modules/
+__pycache__/
+.DS_Store

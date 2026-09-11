@@ -1,0 +1,8 @@
+---
+title: "Gallery — Akif Mustafa"
+title-block-style: none
+---
+
+```{=html}
+<div class="site-main"><h1>Gallery</h1><p class="page-deck">Quiet corners, winding roads, and moments along the way.</p><div class="empty-gallery"><p>Photographs will find their way here soon.</p></div></div>
+```

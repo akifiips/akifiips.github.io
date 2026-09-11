@@ -1,0 +1,29 @@
+project:
+  type: website
+  output-dir: dist
+  resources:
+    - assets/
+  post-render:
+    - python3 scripts/post-render.py
+
+website:
+  title: "Akif Mustafa"
+  description: "Biostatistics, clinical trials, and Bayesian methods — writing by Akif Mustafa."
+  search: false
+  navbar: false
+
+format:
+  html:
+    theme: cosmo
+    css: assets/site.css
+    include-before-body: _includes/header.html
+    include-after-body: _includes/footer.html
+    toc: false
+    code-fold: true
+    code-copy: true
+    lang: en
+
+execute:
+  freeze: auto
+  warning: false
+  message: false

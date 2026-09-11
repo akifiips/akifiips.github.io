@@ -1,0 +1,13 @@
+---
+title: "Akif Mustafa — Biostatistician"
+title-block-style: none
+listing:
+  id: featured
+  contents: posts/rmst/index.qmd
+  template: _includes/posts.ejs
+  sort: "date desc"
+---
+
+```{=html}
+<div class="site-main"><section class="intro"><h1>Hi, welcome to my corner of the web.</h1><p>I’m Akif Mustafa, a biostatistician with a PhD in Biostatistics and Demography. My interests include adaptive designs in clinical trials and Bayesian methods. Here, I share ideas, explanations, and explorations in biostatistics, often with examples in R.</p><p>When I’m not working, I’m on my beautiful bike. If I’m not at my desk, chances are I’m lost somewhere in the Western Ghats - chasing winding roads in search of quiet corners and open air.</p><div class="social-links"><a href="https://www.linkedin.com/in/akif-mustafa-665b0712a/">LinkedIn</a><a href="https://medium.com/@akif.iips">Medium</a><a href="https://www.researchgate.net/profile/Akif-Mustafa">ResearchGate</a></div></section><section class="section"><h2 class="section-heading accent">Featured article</h2><div id="featured"></div><a class="all-posts" href="blog.html">Browse all articles</a></section></div>
+```

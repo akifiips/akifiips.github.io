@@ -1,0 +1,8 @@
+<% for (const item of items) { %>
+<article class="post-row" data-categories="<%= (item.categories || []).join('|') %>">
+<time class="post-date"><%= item.date || '' %></time><div>
+<a class="post-title" href="<%= item.path %>"><%= item.title %></a>
+<% if (item.description) { %><p class="post-description"><%= item.description %></p><% } %>
+<div class="tags"><% for (const category of (item.categories || [])) { %><span class="tag"><%= category %></span><% } %></div>
+</div></article>
+<% } %>
