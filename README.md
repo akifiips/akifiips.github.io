@@ -81,3 +81,9 @@ Use your own photo filename and descriptive alt text. The layout uses two column
 The workflow deploys the already-rendered `dist/` folder. It deliberately does not install R packages or rerun analyses on GitHub. After writing, run `quarto render` locally and push the updated `dist/` with your source. Relative links support either a username website or a project subdirectory.
 
 No comments, newsletter, analytics, or photo-upload service is included.
+
+## Multi-crossover article
+
+The editable source is `posts/multicross-design/index.qmd`; its supplied rendered HTML is integrated at `dist/posts/multicross-design/index.html`, with shared navigation, a collapsible table of contents, and site search. Figures and computed results are preserved from the supplied HTML, without rerunning R. The publication date is fixed at 11 September 2026.
+
+The GitHub Actions workflow publishes `dist/` without rendering Quarto. Uploading a `.qmd` alone will not update the live site. After future edits, render the whole site locally and commit both the source and updated `dist/`, including the blog listing and search index. The MultiCross source additionally requires the R package `scales`.

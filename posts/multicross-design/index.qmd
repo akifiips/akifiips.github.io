@@ -1,0 +1,1229 @@
+---
+title: "Multi-Crossover Designs in RCTs"
+subtitle: "What you gain by adding periods — and what it costs"
+
+author: "Akif Mustafa [✉](mailto:akifalig25@gmail.com)"
+
+date: 2026-09-11
+categories: [Clinical trials, R]
+description: "A practical guide to multi-crossover randomized trials: design, analysis, advantages, and limitations."
+abstract: "A practical guide to multi-crossover (higher-order) randomized controlled trial designs: how they are structured, how they are analysed, what they buy you, and when they break."
+
+format:
+  html:
+    mainfont: "Book Antiqua, serif"
+    fontsize: 1.1em
+    toc: true
+    toc-location: left
+    toc-depth: 3
+    toc-title: "Table of contents"
+    number-sections: true
+    embed-resources: true
+    link-external-newwindow: true
+    code-fold: true
+    code-tools: true
+    highlight-style: tango
+    anchor-sections: true
+    theme:
+      light: simplex
+      dark: darkly
+
+execute:
+  message: false
+  warning: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+library(scales)
+
+# ── Colour palette ────────────────────────────────────────
+clr_trt_A   <- "#2E86AB"   # Treatment A / Test
+clr_trt_B   <- "#E8553D"   # Treatment B / Reference
+clr_washout <- "#BDC3C7"   # Washout
+clr_pos     <- "#27AE60"
+clr_neg     <- "#C0392B"
+clr_accent  <- "#8E44AD"
+clr_dark    <- "#2C3E50"
+clr_muted   <- "#7F8C8D"
+clr_header  <- "#2C3E50"
+
+# ── Blog theme ────────────────────────────────────────────
+theme_blog <- function(base_size = 14) {
+  theme_minimal(base_size = base_size) +
+    theme(
+      text             = element_text(color = clr_dark),
+      plot.title       = element_text(face = "bold", size = base_size + 2),
+      axis.title       = element_text(face = "bold", size = base_size - 1),
+      axis.text        = element_text(color = clr_dark, size = base_size - 2),
+      panel.grid       = element_line(color = "#E8E8E8"),
+      panel.grid.minor = element_blank(),
+      legend.position  = "bottom",
+      legend.title     = element_text(face = "bold", size = base_size - 2),
+      legend.text      = element_text(size = base_size - 2),
+      plot.caption     = element_text(color = clr_muted, size = base_size - 4,
+                                      hjust = 1, margin = margin(t = 8))
+    )
+}
+
+# ── Table helper (font_size correctly forwarded) ──────────
+styled_table <- function(..., font_size = NULL) {
+  kable(...) |>
+    kable_styling(
+      bootstrap_options = c("striped", "hover", "responsive", "condensed"),
+      full_width = FALSE,
+      position   = "center",
+      font_size  = font_size
+    )
+}
+
+# ── Shared helper for crossover schematics ────────────────
+xo_schematic <- function(df, seq_levels, fill_values, fill_labels,
+                         text_size = 3.5) {
+  df$Sequence <- factor(df$Sequence, levels = rev(seq_levels))
+  ggplot(df) +
+    geom_rect(
+      aes(xmin = x_start, xmax = x_end,
+          ymin = as.numeric(Sequence) - 0.3,
+          ymax = as.numeric(Sequence) + 0.3,
+          fill = fill),
+      color = "black", linewidth = 0.4
+    ) +
+    geom_text(
+      aes(x = (x_start + x_end) / 2,
+          y = as.numeric(Sequence),
+          label = Label),
+      size = text_size, fontface = "bold"
+    ) +
+    scale_fill_manual(values = fill_values, labels = fill_labels, name = "") +
+    scale_y_continuous(breaks = seq_along(seq_levels),
+                       labels = rev(seq_levels)) +
+    labs(x = "Study Timeline →", y = "") +
+    theme_blog() +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid = element_blank())
+}
+```
+
+::: {.callout-note appearance="simple"}
+**In one paragraph.** A standard crossover gives each participant two treatments in two periods. A *multi-crossover* design gives them three or more. That extra structure lets you estimate within-subject variability per treatment, estimate carryover instead of assuming it away, compare more than two treatments, and survive dropout. The price is a longer trial, heavier logistics, and a stricter set of assumptions.
+:::
+
+------------------------------------------------------------------------
+
+# Why add periods? {#sec-intro}
+
+In a parallel-group trial, each participant gets one treatment. Comparisons are made *between* people, so between-subject variability sits squarely in the denominator of your test statistic and inflates the sample size you need.
+
+A crossover design removes that. Each participant receives more than one treatment in a randomised order, so the comparison is made *within* a person. When treatment effects are fast, reversible, and repeatedly measurable, this can be dramatically more efficient.
+
+The familiar AB/BA crossover, however, is a fragile instrument. Carryover is aliased with the treatment-by-period interaction, so the two cannot be separated. A participant who drops out after the first period contributes nothing to the paired comparison. And only two treatments can be compared.
+
+Adding periods fixes much of this. That is the subject of this article.
+
+## The standard crossover, briefly
+
+```{r}
+#| label: fig-2period-crossover
+#| fig-cap: "Standard two-period, two-sequence (AB/BA) crossover."
+#| fig-height: 3.2
+#| fig-width: 8
+#| echo: false
+
+xo_df <- data.frame(
+  Sequence = rep(c("Sequence 1 (AB)", "Sequence 2 (BA)"), each = 3),
+  x_start  = rep(c(1, 2, 2.5), 2),
+  x_end    = rep(c(2, 2.5, 3.5), 2),
+  Label    = c("Treatment A", "W", "Treatment B",
+               "Treatment B", "W", "Treatment A"),
+  fill     = c("A", "W", "B", "B", "W", "A")
+)
+
+xo_schematic(xo_df,
+  seq_levels  = c("Sequence 1 (AB)", "Sequence 2 (BA)"),
+  fill_values = c("A" = clr_trt_A, "B" = clr_trt_B, "W" = clr_washout),
+  fill_labels = c("Treatment A", "Treatment B", "Washout"),
+  text_size   = 3.8)
+```
+
+Four terms recur throughout:
+
+- **Period** — an interval during which a participant receives and is assessed on one treatment.
+- **Sequence** — the order of treatments assigned to a participant (AB, BA, ABAB, …).
+- **Washout** — the gap between periods, long enough for the previous treatment's effects to dissipate.
+- **Within-subject comparison** — each participant's response on one treatment compared against their own response on another.
+
+```{r}
+#| label: tbl-2period-limitations
+#| tbl-cap: "What breaks in a two-period crossover, and how extra periods help."
+#| echo: false
+
+limitations_df <- data.frame(
+  Limitation = c(
+    "Carryover aliased with treatment × period interaction",
+    "Only two treatments comparable",
+    "Dropout after Period 1 destroys the pairing",
+    "No treatment-specific within-subject variance"
+  ),
+  Two_Period = c(
+    "Carryover can be tested, but only with very low power, and cannot be separated from treatment × period",
+    "One pairwise comparison",
+    "Participant contributes no within-subject information",
+    "Only a pooled within-subject variance is estimable"
+  ),
+  Multi_Crossover = c(
+    "Extra periods break the aliasing; carryover is estimable in balanced designs",
+    "Williams and Latin Square designs handle ≥ 3 treatments",
+    "Completing ≥ 2 of ≥ 3 periods still yields within-subject comparisons",
+    "Replicated designs give a separate variance per treatment"
+  )
+)
+
+styled_table(limitations_df,
+  col.names = c("Limitation", "Two-Period Crossover", "Multi-Crossover Resolution"),
+  align = c("l", "l", "l")) |>
+  row_spec(0, background = clr_header, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "14em") |>
+  column_spec(2, width = "18em") |>
+  column_spec(3, width = "18em")
+```
+
+# Design configurations {#sec-configs}
+
+A **multi-crossover** (or higher-order) design is a crossover trial with three or more periods. It may involve two treatments repeated (a *replicated* crossover) or three or more treatments each given at least once (a *multi-treatment* crossover).
+
+Two closely related designs are worth naming because they appear constantly in practice:
+
+- **Latin Square crossover** — number of periods equals number of treatments, each treatment appearing once per period across the sequence set.
+- **Williams design** — a balanced Latin Square in which every treatment precedes and follows every other treatment equally often, giving balance for first-order carryover.
+
+## Replicated (two-treatment) designs
+
+```{r}
+#| label: tbl-replicated-designs
+#| tbl-cap: "Common replicated crossover configurations for two treatments (T = test, R = reference)."
+#| echo: false
+
+replicated_designs <- data.frame(
+  Design = c(
+    "Full replicate (2×2×4)",
+    "Full replicate, 4-sequence",
+    "Partial replicate (2×3×3)",
+    "Two-sequence, four-period"
+  ),
+  Sequences = c(
+    "TRTR, RTRT",
+    "TRTR, RTRT, TRRT, RTTR",
+    "TRR, RTR, RRT",
+    "TTRR, RRTT"
+  ),
+  Periods = c(4, 4, 3, 4),
+  Estimates = c(
+    "Within-subject variance for both T and R",
+    "Within-subject variance for both T and R",
+    "Within-subject variance for R only",
+    "Within-subject variance for both T and R"
+  )
+)
+
+styled_table(replicated_designs,
+  col.names = c("Design", "Sequences", "Periods", "What it estimates"),
+  align = c("l", "l", "c", "l")) |>
+  row_spec(0, background = clr_header, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "12em") |>
+  column_spec(2, width = "14em") |>
+  column_spec(3, width = "5em") |>
+  column_spec(4, width = "16em")
+```
+
+::: callout-note
+## Why replicate?
+
+Only a replicated design can estimate the within-subject variance **separately for each treatment**. That is exactly what reference-scaled average bioequivalence requires for highly variable drug products — which is why four-period and partial-replicate designs dominate the bioequivalence literature.
+:::
+
+## Multi-treatment (Williams) designs
+
+A Williams design is constructed so that each treatment appears equally often in each period, and each treatment is immediately preceded by every other treatment equally often.
+
+```{r}
+#| label: tbl-williams-design
+#| tbl-cap: "Williams design for three treatments: six sequences, three periods."
+#| echo: false
+
+williams_3 <- data.frame(
+  Sequence  = paste("Sequence", 1:6),
+  Period_1  = c("A", "B", "C", "C", "A", "B"),
+  Period_2  = c("B", "C", "A", "B", "C", "A"),
+  Period_3  = c("C", "A", "B", "A", "B", "C")
+)
+
+styled_table(williams_3,
+  col.names = c("Sequence", "Period 1", "Period 2", "Period 3"),
+  align = "c") |>
+  row_spec(0, background = clr_accent, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE) |>
+  column_spec(2:4, width = "6em")
+```
+
+For an **even** number of treatments *t*, a Williams design needs *t* sequences; for an **odd** *t*, it needs 2*t*. So four treatments fit into a balanced 4×4 square:
+
+```{r}
+#| label: tbl-williams-4
+#| tbl-cap: "Williams design for four treatments: four sequences, four periods."
+#| echo: false
+
+williams_4 <- data.frame(
+  Sequence = paste("Sequence", 1:4),
+  Period_1 = c("A", "B", "C", "D"),
+  Period_2 = c("B", "D", "A", "C"),
+  Period_3 = c("C", "A", "D", "B"),
+  Period_4 = c("D", "C", "B", "A")
+)
+
+styled_table(williams_4,
+  col.names = c("Sequence", "Period 1", "Period 2", "Period 3", "Period 4"),
+  align = "c") |>
+  row_spec(0, background = clr_accent, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE) |>
+  column_spec(2:5, width = "6em")
+```
+
+When the number of treatments makes full balance impractical, **partially balanced** designs achieve balance for a subset of comparisons — a workable compromise.
+
+::: {.callout-tip appearance="simple"}
+## A note on Balaam's design
+
+Balaam's design (sequences AA, AB, BA, BB) has only **two** periods, so it is not a multi-crossover design by the definition used here. It is included in discussions like this one because the same-treatment sequences let you estimate direct treatment *and* carryover effects — the same problem multi-period designs solve, tackled by adding sequences instead of periods.
+:::
+
+# Planning a multi-crossover trial {#sec-planning}
+
+Before analysis, five planning decisions determine whether the design will work.
+
+**1. Number of periods.** Each additional period increases precision but also dropout, duration, and cost. Choose the smallest *p* that answers your question: 3 if you need carryover estimable or a third treatment; 4 if you need treatment-specific within-subject variances.
+
+**2. Washout duration.** Set it from pharmacokinetics and pharmacodynamics, not convenience. A common rule of thumb is 5–7 elimination half-lives, but calibrate to the **longest-acting** treatment and to pharmacodynamic recovery, which can outlast drug clearance. In a multi-crossover design the washout must be adequate at *every* transition.
+
+**3. Run-in and period-specific baselines.** A run-in stabilises the condition and reduces regression to the mean when participants are enrolled on extreme values. Collecting a baseline **before each period** gives you a direct check that participants returned to their starting state — the single most useful empirical evidence that the washout worked.
+
+**4. Sample size.** For a continuous outcome, two treatments, *p* periods with *p*/2 replicates each, total participants for power $1-\beta$ at two-sided $\alpha$:
+
+$$N \;=\; \frac{4\,(z_{1-\alpha/2} + z_{1-\beta})^{2}\,\sigma_w^{2}}{p\,\delta^{2}}$$
+
+which reduces to the familiar $2(z_{1-\alpha/2}+z_{1-\beta})^2\sigma_w^2/\delta^2$ when *p* = 2. Inflate for anticipated dropout, and note that only $\sigma_w^2$ appears — the between-subject variance has vanished.
+
+**5. Randomisation and simulation.** Allocate with stratified permuted blocks whose block size is a multiple of the number of sequences, so period and sequence stay balanced. Because closed-form power formulae ignore dropout, carryover and unbalanced sequences, **simulate** the design under realistic scenarios before committing.
+
+# Statistical considerations {#sec-stats}
+
+## Choose the estimand first
+
+The repeated-measures structure supports several distinct quantities. Pre-specify which one you want, because it determines the model.
+
+- **Population-average effect** — the mean difference averaged across the population. Targeted by marginal models (GEE). Relevant for treatment policy.
+- **Subject-specific effect** — the difference for a given individual, or the distribution of individual effects. Targeted by mixed models. Relevant for individualised decisions.
+
+Beyond the mean effect you may care about **heterogeneity of response** (the treatment-by-subject interaction, which is what makes N-of-1 designs interesting) and **consistency across periods** (the treatment-by-period interaction, which detects tolerance, learning effects, or carryover contamination).
+
+## Where the variability lives
+
+```{r}
+#| label: fig-variance-components
+#| fig-cap: "Between- and within-subject variability across four periods. Crossover analysis removes the between-subject component from the treatment comparison; the extra periods let you estimate the within-subject component directly."
+#| fig-height: 4.8
+#| fig-width: 8
+#| echo: false
+
+set.seed(123)
+
+n_subj   <- 6
+n_period <- 4
+
+subj_effect   <- rnorm(n_subj, 0, 2.0)
+period_effect <- c(0, 0.3, 0.5, 0.4)
+within_error  <- matrix(rnorm(n_subj * n_period, 0, 0.8),
+                        nrow = n_subj, ncol = n_period)
+
+response <- outer(subj_effect, period_effect, "+") + 10 + within_error
+
+var_df <- data.frame(
+  Subject  = rep(paste("Subject", 1:n_subj), each = n_period),
+  Period   = rep(1:n_period, n_subj),
+  Response = as.vector(t(response))
+)
+var_df$Subject <- factor(var_df$Subject, levels = paste("Subject", 1:n_subj))
+
+focal <- subset(var_df, Subject == "Subject 1")
+
+ggplot(var_df, aes(x = Period, y = Response, group = Subject, color = Subject)) +
+  geom_line(linewidth = 0.9, alpha = 0.8) +
+  geom_point(size = 3) +
+  scale_x_continuous(breaks = 1:4, labels = paste("Period", 1:4)) +
+  scale_color_brewer(palette = "Set2") +
+  labs(x = "", y = "Observed Response", color = "") +
+  annotate("segment", x = 0.6, xend = 0.6,
+           y = min(var_df$Response), yend = max(var_df$Response),
+           arrow = arrow(ends = "both", length = unit(0.15, "cm")),
+           color = clr_dark, linewidth = 0.7) +
+  annotate("text", x = 0.5, y = mean(var_df$Response),
+           label = "Between-\nsubject", size = 3, hjust = 1,
+           color = clr_dark, fontface = "italic") +
+  annotate("segment", x = 4.3, xend = 4.3,
+           y = min(focal$Response), yend = max(focal$Response),
+           arrow = arrow(ends = "both", length = unit(0.15, "cm")),
+           color = clr_neg, linewidth = 0.7) +
+  annotate("text", x = 4.4, y = mean(focal$Response),
+           label = "Within-subject\n(one participant)", size = 3, hjust = 0,
+           color = clr_neg, fontface = "italic") +
+  coord_cartesian(xlim = c(0.3, 5.6)) +
+  theme_blog()
+```
+
+- **Between-subject variance** ($\sigma_b^2$) — differences in baseline level across participants. Dominates parallel-group trials; removed by within-subject differencing. Handled as a random subject effect.
+- **Within-subject variance** ($\sigma_w^2$) — variation in one participant's response to the same treatment on different occasions. This is what drives your sample size. In replicated designs it can be estimated per treatment.
+- **Period-to-period variation** — temporal trends, seasonality, practice effects. Handled as a fixed period effect; biases the comparison only if the design is unbalanced.
+
+## Biases to design against
+
+```{r}
+#| label: tbl-biases
+#| tbl-cap: "Systematic effects in multi-crossover trials, and how to handle them."
+#| echo: false
+
+biases_df <- data.frame(
+  Effect = c("Period effect", "Sequence effect", "Carryover effect",
+             "Time trend", "Regression to the mean"),
+  Threat = c(
+    "Confounds the treatment comparison when the design is unbalanced",
+    "May signal differential carryover or prognostic imbalance",
+    "Biases the treatment effect; the most serious threat in crossover trials",
+    "Systematic drift unrelated to treatment",
+    "Inflates the apparent effect in the first period"
+  ),
+  Design_Mitigation = c(
+    "Balanced designs (Williams, Latin Square)",
+    "Randomisation with adequate sample size",
+    "Adequate washout; balanced designs",
+    "Limit total duration; enrol stable disease",
+    "Run-in period; period-specific baselines"
+  ),
+  Analysis_Mitigation = c(
+    "Fixed period effect",
+    "Fixed sequence effect",
+    "Carryover-adjusted sensitivity analysis (@sec-carryover)",
+    "Time covariate in the model",
+    "Baseline adjustment"
+  )
+)
+
+styled_table(biases_df,
+  col.names = c("Effect", "Threat to Validity",
+                "Design-Stage Mitigation", "Analysis-Stage Mitigation"),
+  align = c("l", "l", "l", "l")) |>
+  row_spec(0, background = clr_header, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "8em") |>
+  column_spec(2, width = "15em") |>
+  column_spec(3, width = "13em") |>
+  column_spec(4, width = "13em")
+```
+
+## Analysis methods
+
+For a continuous outcome the **linear mixed-effects model** is the default: fixed effects for treatment, period and sequence, a random intercept for participant, and optionally a carryover term. It tolerates unbalanced data from dropout and yields both subject-specific and population-average estimates.
+
+```{r}
+#| label: tbl-analysis-methods
+#| tbl-cap: "Analytical options and when each applies."
+#| echo: false
+
+methods_df <- data.frame(
+  Method = c("Linear mixed model (LMM)", "Generalized linear mixed model (GLMM)",
+             "Generalized estimating equations (GEE)", "Bayesian hierarchical model",
+             "Repeated measures ANOVA"),
+  Outcome_Type = c("Continuous", "Binary, count", "Any (via link)", "Any", "Continuous"),
+  Estimand = c("Subject-specific and population-average", "Subject-specific (conditional)",
+               "Population-average (marginal)", "Subject-specific, full posterior",
+               "Population-average within blocks"),
+  Notes = c(
+    "Default choice; handles missing data under MAR; assumes normal residuals",
+    "Logit or log link; convergence can be fragile with small N",
+    "Needs adequate N for the sandwich estimator; no subject-specific estimates",
+    "Best for small N, sparse data, and N-of-1 aggregation; prior sensitivity applies",
+    "Requires complete, balanced data and compound symmetry; largely superseded"
+  )
+)
+
+styled_table(methods_df,
+  col.names = c("Method", "Outcome Type", "Estimand", "Notes"),
+  align = c("l", "l", "l", "l"), font_size = 12) |>
+  row_spec(0, background = clr_accent, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "11em") |>
+  column_spec(2, width = "8em") |>
+  column_spec(3, width = "12em") |>
+  column_spec(4, width = "18em")
+```
+
+## Handling carryover {#sec-carryover}
+
+**Prevent it by design.** An adequate washout, calibrated to pharmacokinetics *and* pharmacodynamics, is the primary safeguard. If the washout is pharmacologically defensible, the no-carryover assumption is defensible too.
+
+**Assess it by analysis.** In a design with sufficient degrees of freedom — a four-period replicate or a Williams design — include first-order carryover as a fixed effect in a pre-specified sensitivity analysis. If the treatment estimate barely moves, you have empirical reassurance. If it moves a lot, re-examine the washout and qualify your conclusions.
+
+**Do not use the old two-stage procedure.** Grizzle's (1965) approach — test for carryover, then analyse as a crossover if non-significant and as a first-period parallel trial if significant — was dismantled by Senn (1993, 2002) on four grounds:
+
+- The preliminary test has very low power, so a non-significant result is not evidence of absence.
+- Conditioning the analysis on the test inflates the overall Type I error rate.
+- It fails precisely when it is needed: undetected carryover leaves you with a biased crossover analysis.
+- Reverting to first-period data discards the within-subject information that motivated the design.
+
+::: {.callout-caution}
+## Critical reminder
+
+Never fall back on a first-period-only analysis because carryover was "detected". Use a design in which carryover can be estimated directly, and report the sensitivity analysis alongside the primary one.
+:::
+
+# What you gain {#sec-advantages}
+
+## Precision, and therefore sample size
+
+Each additional period adds within-subject replication. For a two-treatment replicated design with *p* periods, the variance of the treatment effect is proportional to $1/p$, so relative to a two-period crossover it falls as $2/p$.
+
+```{r}
+#| label: fig-precision-gain
+#| fig-cap: "Variance of the treatment effect estimate relative to a two-period crossover, for two-treatment replicated designs with an even number of periods (2/p). Odd-period designs are not on this curve."
+#| fig-height: 4.2
+#| fig-width: 8
+#| echo: false
+
+periods      <- c(2, 4, 6, 8)
+relative_var <- 2 / periods
+
+precision_df <- data.frame(
+  Periods       = periods,
+  Relative_Var  = relative_var,
+  Pct_Reduction = (1 - relative_var) * 100
+)
+
+ggplot(precision_df, aes(x = Periods, y = Relative_Var)) +
+  geom_area(fill = clr_trt_A, alpha = 0.15) +
+  geom_line(color = clr_dark, linewidth = 1.2) +
+  geom_point(color = clr_dark, size = 3.5) +
+  geom_text(aes(label = paste0(round(Pct_Reduction), "%\nreduction")),
+            vjust = -1.0, size = 3.2, color = clr_neg, fontface = "italic") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = clr_muted) +
+  scale_x_continuous(breaks = periods, labels = paste0(periods, " periods")) +
+  scale_y_continuous(limits = c(0, 1.2), breaks = seq(0, 1, 0.25),
+                     labels = percent_format(accuracy = 1)) +
+  labs(x = "Number of Periods",
+       y = "Relative Variance\n(vs 2-period crossover)") +
+  theme_blog()
+```
+
+Against a **parallel-group** trial the gain is larger still, and it scales with the intraclass correlation. Using total participants and a common effect size $\delta$ on the total-SD scale, the ratio of crossover to parallel sample size is $(1-\text{ICC})\cdot 2/p$.
+
+```{r}
+#| label: fig-efficiency-vs-parallel
+#| fig-cap: "Total sample size for a crossover design as a proportion of the parallel-group requirement, as a function of the ICC. Ratio = (1 − ICC) × 2/p, matching the sample size formula in Section 3."
+#| fig-height: 4.6
+#| fig-width: 9
+#| echo: false
+
+icc_seq <- seq(0.1, 0.95, by = 0.01)
+
+eff_df <- data.frame(
+  ICC    = rep(icc_seq, 2),
+  Ratio  = c((1 - icc_seq), (1 - icc_seq) / 2),
+  Design = rep(c("2-Period Crossover", "4-Period Replicated Crossover"),
+               each = length(icc_seq))
+)
+eff_df$Design <- factor(eff_df$Design,
+  levels = c("2-Period Crossover", "4-Period Replicated Crossover"))
+
+ggplot(eff_df, aes(x = ICC, y = Ratio, color = Design, linetype = Design)) +
+  geom_line(linewidth = 1.2) +
+  scale_color_manual(values = c("2-Period Crossover" = clr_trt_B,
+                                "4-Period Replicated Crossover" = clr_pos)) +
+  scale_linetype_manual(values = c("2-Period Crossover" = "dashed",
+                                   "4-Period Replicated Crossover" = "solid")) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2),
+                     labels = percent_format(accuracy = 1)) +
+  annotate("rect", xmin = 0.5, xmax = 0.85, ymin = 0, ymax = 0.55,
+           alpha = 0.08, fill = clr_pos) +
+  annotate("text", x = 0.675, y = 0.52, label = "Typical clinical range",
+           size = 3.5, color = clr_pos, fontface = "italic") +
+  labs(x = "Intraclass Correlation Coefficient (ICC)",
+       y = "Sample Size Ratio\n(Crossover / Parallel)",
+       color = "", linetype = "") +
+  theme_blog()
+```
+
+For ICC between 0.5 and 0.8 — common for pharmacokinetic endpoints, physiological measurements and symptom scores — a two-period crossover needs roughly **20–50%** of the parallel-group sample size, and a four-period replicate roughly **10–25%**.
+
+```{r}
+#| label: fig-rare-disease
+#| fig-cap: "Total participants for 80% power to detect δ = 0.5 total-SD units (two-sided α = 0.05), assuming ICC = 0.7, no carryover, no dropout, equal variances and perfect balance. Derived from the same formula as the curves above."
+#| fig-height: 4.2
+#| fig-width: 8
+#| echo: false
+
+alpha <- 0.05; power <- 0.80; delta <- 0.5; icc <- 0.7
+z_alpha <- qnorm(1 - alpha / 2); z_beta <- qnorm(power)
+
+sigma_total <- 1
+sigma_w2    <- (1 - icc) * sigma_total^2
+k           <- (z_alpha + z_beta)^2
+
+n_parallel <- ceiling(4 * k * sigma_total^2 / delta^2)   # total, both arms
+n_2xo      <- ceiling(4 * k * sigma_w2 / (2 * delta^2))
+n_4xo      <- ceiling(4 * k * sigma_w2 / (4 * delta^2))
+
+design_comparison <- data.frame(
+  Design = factor(c("Parallel-Group", "2-Period\nCrossover",
+                    "4-Period\nReplicated Crossover"),
+                  levels = c("Parallel-Group", "2-Period\nCrossover",
+                             "4-Period\nReplicated Crossover")),
+  N = c(n_parallel, n_2xo, n_4xo)
+)
+
+ggplot(design_comparison, aes(x = Design, y = N, fill = Design)) +
+  geom_col(width = 0.6, color = "black", linewidth = 0.4, alpha = 0.9) +
+  geom_text(aes(label = paste0("N = ", N)), vjust = -0.5,
+            size = 4.5, fontface = "bold") +
+  scale_fill_manual(values = c("Parallel-Group" = clr_neg,
+                               "2-Period\nCrossover" = clr_trt_B,
+                               "4-Period\nReplicated Crossover" = clr_pos)) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(x = "", y = "Total Participants Required") +
+  theme_blog() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank())
+```
+
+This is decisive in **rare diseases, paediatric subgroups and narrow phenotypes**, where a parallel trial simply cannot be powered. At the limit, N-of-1 designs use repeated crossover cycles within a single patient, and aggregating several N-of-1 trials recovers population-level estimates.
+
+## Confounding, and repeated self-control
+
+Because every participant receives every treatment, there is no baseline imbalance to worry about: confounding by any **stable** participant-level characteristic — measured or not — is eliminated by construction. This does *not* extend to time-varying confounders, carryover, or differential dropout, all of which remain live threats.
+
+Repetition adds two things beyond the group mean: **individual-level treatment effects**, and the **reproducibility** of those effects across occasions, which distinguishes consistent responders from noisy ones.
+
+```{r}
+#| label: fig-within-subject
+#| fig-cap: "Within-subject comparisons in a four-period replicated crossover (ABAB). Each participant contributes multiple paired A-vs-B contrasts."
+#| fig-height: 4.5
+#| fig-width: 9
+#| echo: false
+
+set.seed(101)
+n_subj <- 5
+
+subj_data <- data.frame(
+  Subject   = rep(paste("Subject", 1:n_subj), each = 4),
+  Period    = rep(1:4, n_subj),
+  Treatment = rep(c("A", "B", "A", "B"), n_subj)
+)
+
+baseline   <- rnorm(n_subj, 50, 8)
+trt_effect <- -5
+within_sd  <- 3
+
+subj_data$Response <- unlist(lapply(1:n_subj, function(i) {
+  idx <- ((i - 1) * 4 + 1):(i * 4)
+  baseline[i] + ifelse(subj_data$Treatment[idx] == "B", trt_effect, 0) +
+    rnorm(4, 0, within_sd)
+}))
+
+subj_data$Subject <- factor(subj_data$Subject, levels = paste("Subject", 1:n_subj))
+
+ggplot(subj_data, aes(x = Period, y = Response, group = Subject)) +
+  geom_line(color = "#CCCCCC", linewidth = 0.6) +
+  geom_point(aes(fill = Treatment), size = 4, shape = 21,
+             color = "black", stroke = 0.5) +
+  facet_wrap(~ Subject, nrow = 1) +
+  scale_fill_manual(values = c("A" = clr_trt_A, "B" = clr_trt_B)) +
+  scale_x_continuous(breaks = 1:4, labels = paste0("P", 1:4)) +
+  labs(x = "Period", y = "Response", fill = "Treatment") +
+  theme_blog() +
+  theme(strip.text = element_text(face = "bold"))
+```
+
+## Where the design fits
+
+```{r}
+#| label: tbl-therapeutic-fit
+#| tbl-cap: "Suitability by treatment onset and offset characteristics."
+#| echo: false
+
+fit_df <- data.frame(
+  Characteristic = c(
+    "Rapid onset and offset (hours to days)",
+    "Moderate onset and offset (days to weeks)",
+    "Slow onset, prolonged effect (weeks to months)",
+    "Permanent or disease-modifying effect"
+  ),
+  Examples = c(
+    "Bronchodilators, acute analgesics, PK studies",
+    "Antihypertensives, antihistamines, migraine prophylaxis",
+    "Antidepressants, immunomodulators",
+    "Vaccines, gene therapies, surgical interventions"
+  ),
+  Suitability = c(
+    "Excellent — short periods allow many cycles",
+    "Good — feasible period and washout durations",
+    "Limited — long washouts stretch the trial badly",
+    "Not suitable — reversibility assumption fails"
+  )
+)
+
+styled_table(fit_df,
+  col.names = c("Treatment Characteristic", "Examples", "Suitability"),
+  align = c("l", "l", "l")) |>
+  row_spec(0, background = clr_header, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "14em") |>
+  column_spec(2, width = "16em") |>
+  column_spec(3, width = "16em") |>
+  row_spec(1, background = "#E8F8F5") |>
+  row_spec(2, background = "#FEF9E7") |>
+  row_spec(3, background = "#FDEBD0") |>
+  row_spec(4, background = "#FADBD8")
+```
+
+# What it costs {#sec-limitations}
+
+## Dropout and duration
+
+Every extra period means more visits, more assessments and more elapsed time, so withdrawal accumulates.
+
+```{r}
+#| label: fig-dropout-trajectory
+#| fig-cap: "Retention under a constant 8% per-period dropout, for designs of 2, 4 and 6 periods. Multi-crossover designs lose more participants in absolute terms, but a partial completer still contributes within-subject information."
+#| fig-height: 4.5
+#| fig-width: 9
+#| echo: false
+
+dropout_prob <- 0.08
+n_start      <- 100
+
+retention_df <- do.call(rbind, lapply(c(2, 4, 6), function(p_max) {
+  data.frame(
+    Period   = 1:p_max,
+    Retained = n_start * (1 - dropout_prob)^(0:(p_max - 1)),
+    Design   = paste0(p_max, "-Period Crossover")
+  )
+}))
+
+retention_df$Design <- factor(retention_df$Design,
+  levels = c("2-Period Crossover", "4-Period Crossover", "6-Period Crossover"))
+
+ggplot(retention_df, aes(x = Period, y = Retained,
+                         colour = Design, group = Design)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  scale_colour_manual(values = c("2-Period Crossover" = clr_trt_B,
+                                 "4-Period Crossover" = clr_accent,
+                                 "6-Period Crossover" = clr_dark)) +
+  scale_x_continuous(breaks = 1:6, labels = paste("Period", 1:6)) +
+  scale_y_continuous(limits = c(55, 105)) +
+  labs(x = "", y = "Participants Retained", colour = "") +
+  theme_blog()
+```
+
+Worse, if dropout is **differential** — participants leaving preferentially during a poorly tolerated treatment — the missing-at-random assumption behind your primary analysis fails.
+
+Total participant time is:
+
+$$T_{\text{total}} = T_{\text{screen}} + T_{\text{run-in}} + p \cdot T_{\text{treatment}} + (p - 1) \cdot T_{\text{washout}}$$
+
+```{r}
+#| label: tbl-duration-examples
+#| tbl-cap: "Total duration for representative configurations (screening 2 weeks, run-in 2 weeks)."
+#| echo: false
+
+duration_df <- data.frame(
+  Design_Label = c("2-period (standard crossover)",
+                   "3-period (Williams, 3 treatments)",
+                   "4-period (replicated crossover)",
+                   "4-period (short treatment periods)",
+                   "6-period (N-of-1, 3 pairs)"),
+  Periods            = c(2, 3, 4, 4, 6),
+  Trt_Duration_Weeks = c(4, 4, 4, 2, 2),
+  Washout_Weeks      = c(2, 2, 2, 1, 1)
+)
+
+duration_df$Total_Weeks <- 2 + 2 +
+  duration_df$Periods * duration_df$Trt_Duration_Weeks +
+  (duration_df$Periods - 1) * duration_df$Washout_Weeks
+
+duration_df$Total_Months <- round(duration_df$Total_Weeks / 4.33, 1)
+
+styled_table(duration_df,
+  col.names = c("Design", "Periods", "Treatment (weeks)",
+                "Washout (weeks)", "Total (weeks)", "Total (months)"),
+  align = c("l", "c", "c", "c", "c", "c")) |>
+  row_spec(0, background = clr_header, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "16em") |>
+  column_spec(5:6, bold = TRUE) |>
+  row_spec(3, background = "#FDEBD0") |>
+  row_spec(5, background = "#FADBD8")
+```
+
+Long per-participant timelines also carry an opportunity cost: delayed evidence, delayed regulatory decisions.
+
+## Assumptions that must actually hold
+
+```{r}
+#| label: fig-assumptions
+#| fig-cap: "Core assumptions and the consequence of violating each."
+#| fig-height: 5.5
+#| fig-width: 10
+#| echo: false
+
+assump_levels <- c(
+  "Stable disease",
+  "Reversible treatment\neffects",
+  "No treatment-by-period\ninteraction",
+  "Adequate washout\n(no carryover)",
+  "Consistent participant\ncondition across periods"
+)
+
+assumptions_plot_df <- data.frame(
+  Assumption = factor(assump_levels, levels = rev(assump_levels)),
+  Violation_Consequence = c(
+    "Treatment effect confounded\nwith disease trajectory",
+    "Later periods contaminated;\ndesign invalid",
+    "Average effect\nmay not generalise",
+    "Biased treatment\neffect estimate",
+    "Within-subject comparison\ncompromised"
+  ),
+  Severity = c(4, 5, 3, 4, 3)
+)
+
+ggplot(assumptions_plot_df, aes(x = Severity, y = Assumption, fill = Severity)) +
+  geom_col(width = 0.6, color = "black", linewidth = 0.3, alpha = 0.9) +
+  geom_text(aes(label = Violation_Consequence), hjust = -0.05,
+            size = 3.2, color = clr_dark) +
+  scale_fill_gradient(low = "#F9E79F", high = "#E74C3C") +
+  scale_x_continuous(limits = c(0, 10), breaks = 1:5,
+                     labels = c("Low", "", "Moderate", "", "Critical")) +
+  labs(x = "Impact on Validity", y = "") +
+  theme_blog() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+```{r}
+#| label: tbl-unsuitable
+#| tbl-cap: "Settings where a crossover design should not be used."
+#| echo: false
+
+unsuitable_df <- data.frame(
+  Setting = c("Oncology (curative chemotherapy)", "Vaccine trials",
+              "Surgical interventions", "Gene therapy",
+              "Acute infections", "Rapidly progressive neurodegeneration"),
+  Assumption_Violated = c(
+    "Reversibility; disease modification", "Reversibility (immune memory)",
+    "Reversibility (structural change)", "Reversibility (permanent modification)",
+    "Stable disease (self-limiting)", "Stable disease (progressive)"
+  ),
+  Reason = c(
+    "Disease state is irreversibly altered",
+    "Immune response persists; no washout is possible",
+    "Anatomical changes are permanent",
+    "Irreversible by design",
+    "Condition resolves spontaneously",
+    "Progression between periods confounds the comparison"
+  )
+)
+
+styled_table(unsuitable_df,
+  col.names = c("Clinical Setting", "Assumption Violated", "Reason"),
+  align = c("l", "l", "l")) |>
+  row_spec(0, background = clr_neg, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "12em") |>
+  column_spec(2, width = "13em") |>
+  column_spec(3, width = "18em")
+```
+
+## Carryover survives washout more often than you'd like
+
+```{r}
+#| label: fig-carryover-types
+#| fig-cap: "First- and higher-order carryover in a four-period design. Balanced designs protect against first-order carryover, not higher-order."
+#| fig-height: 4.2
+#| fig-width: 10
+#| echo: false
+
+carryover_df <- data.frame(
+  x_start   = c(1, 3, 5, 7),
+  x_end     = c(2, 4, 6, 8),
+  Treatment = c("A", "B", "A", "B"),
+  Period    = paste("Period", 1:4)
+)
+
+ggplot() +
+  geom_rect(data = carryover_df,
+            aes(xmin = x_start, xmax = x_end, ymin = 0.7, ymax = 1.3,
+                fill = Treatment), color = "black", linewidth = 0.5) +
+  geom_text(data = carryover_df,
+            aes(x = (x_start + x_end) / 2, y = 1,
+                label = paste0("Trt ", Treatment)),
+            size = 4, fontface = "bold") +
+  geom_text(data = carryover_df,
+            aes(x = (x_start + x_end) / 2, y = 0.55, label = Period),
+            size = 3.5, color = "#555555") +
+  annotate("curve", x = 2, y = 1.4, xend = 3, yend = 1.4, curvature = -0.3,
+           arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+           color = clr_neg, linewidth = 0.9) +
+  annotate("text", x = 2.5, y = 1.68, label = "1st-order\ncarryover",
+           size = 3, color = clr_neg, fontface = "bold") +
+  annotate("curve", x = 2, y = 1.75, xend = 5, yend = 1.75, curvature = -0.25,
+           arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+           color = clr_accent, linewidth = 0.9) +
+  annotate("text", x = 3.5, y = 2.1, label = "2nd-order carryover",
+           size = 3, color = clr_accent, fontface = "bold") +
+  scale_fill_manual(values = c("A" = clr_trt_A, "B" = clr_trt_B)) +
+  scale_x_continuous(limits = c(0.5, 8.5)) +
+  scale_y_continuous(limits = c(0.3, 2.3)) +
+  labs(x = "", y = "") +
+  theme_void(base_size = 13) +
+  theme(legend.position = "bottom", legend.title = element_blank())
+```
+
+Three mechanisms defeat a nominally adequate washout:
+
+- **Pharmacodynamic persistence** — enzyme induction or receptor downregulation outlasts drug clearance.
+- **Psychological carryover** — the experience of one treatment colours how symptoms are perceived and reported on the next. No washout removes this.
+- **Higher-order carryover** — residual effects from two or more periods back. Balanced designs distribute first-order carryover evenly; they offer no equivalent protection here.
+
+## Missing data gets complicated
+
+```{r}
+#| label: fig-missing-patterns
+#| fig-cap: "Missing data patterns in a four-period design: monotone dropout versus intermittent non-response."
+#| fig-height: 4.5
+#| fig-width: 9
+#| echo: false
+
+pattern_levels <- c("Complete", "Monotone (after P3)", "Monotone (after P2)",
+                    "Monotone (after P1)", "Intermittent (P2 missing)",
+                    "Intermittent (P3 missing)")
+
+missing_df <- data.frame(
+  Pattern = rep(pattern_levels, each = 4),
+  Period  = rep(1:4, 6),
+  Status  = c(
+    "Observed", "Observed", "Observed", "Observed",
+    "Observed", "Observed", "Observed", "Missing",
+    "Observed", "Observed", "Missing",  "Missing",
+    "Observed", "Missing",  "Missing",  "Missing",
+    "Observed", "Missing",  "Observed", "Observed",
+    "Observed", "Observed", "Missing",  "Observed"
+  )
+)
+missing_df$Pattern <- factor(missing_df$Pattern, levels = rev(pattern_levels))
+
+ggplot(missing_df, aes(x = Period, y = Pattern, fill = Status)) +
+  geom_tile(color = "white", linewidth = 1.5, width = 0.8, height = 0.7) +
+  geom_text(aes(label = ifelse(Status == "Observed", "\u2713", "\u2717"),
+                colour = Status), size = 5, fontface = "bold") +
+  scale_fill_manual(values = c("Observed" = "#E8F8F5", "Missing" = "#FADBD8"),
+                    name = "") +
+  scale_colour_manual(values = c("Observed" = clr_pos, "Missing" = clr_neg),
+                      guide = "none") +
+  scale_x_continuous(breaks = 1:4, labels = paste("Period", 1:4)) +
+  labs(x = "", y = "") +
+  theme_blog() +
+  theme(panel.grid = element_blank(),
+        axis.text.y = element_text(size = 11))
+```
+
+Pre-specify a **primary analysis under MAR** using mixed models, plus **sensitivity analyses under MNAR** — pattern-mixture models, tipping-point analyses, or controlled imputation — and a rule for handling partial period data and intercurrent events under the ICH E9(R1) estimand framework.
+
+## Functional unblinding
+
+Crossover participants can compare their own experiences across periods, which a parallel-group participant cannot. Distinct side-effect profiles, formulation differences, or a large efficacy gap can all reveal treatment identity, and the risk rises with each additional period.
+
+Mitigations — active placebo, matched formulations, double-dummy administration, objective co-primary endpoints, and a post-study blinding index (James or Bang) — reduce the problem without eliminating it. Build them in at the design stage.
+
+# Case studies {#sec-cases}
+
+::: {.callout-warning appearance="simple"}
+Registry identifiers, sample sizes and design descriptions below should be re-verified against the primary sources before publication.
+:::
+
+::: panel-tabset
+
+## Replicated designs
+
+Replicated crossovers dominate bioequivalence work, where the goal is to estimate intra-subject variability for reference-scaled assessment of highly variable drugs.
+
+```{r}
+#| label: fig-replicated-schematic
+#| fig-cap: "Full-replicate crossover (TRTR/RTRT): each formulation is given twice."
+#| fig-height: 3.2
+#| fig-width: 10
+#| echo: false
+
+rep_df <- data.frame(
+  Sequence = rep(c("Sequence 1 (TRTR)", "Sequence 2 (RTRT)"), each = 7),
+  x_start  = rep(c(1.0, 2.0, 2.4, 3.4, 3.8, 4.8, 5.2), 2),
+  x_end    = rep(c(2.0, 2.4, 3.4, 3.8, 4.8, 5.2, 6.2), 2),
+  Label    = c("Test", "W", "Ref", "W", "Test", "W", "Ref",
+               "Ref", "W", "Test", "W", "Ref", "W", "Test"),
+  fill     = c("T", "W", "R", "W", "T", "W", "R",
+               "R", "W", "T", "W", "R", "W", "T")
+)
+
+xo_schematic(rep_df,
+  seq_levels  = c("Sequence 1 (TRTR)", "Sequence 2 (RTRT)"),
+  fill_values = c("T" = clr_trt_A, "R" = clr_trt_B, "W" = clr_washout),
+  fill_labels = c("Reference", "Test", "Washout"),
+  text_size   = 3)
+```
+
+```{r}
+#| label: tbl-replicated-examples
+#| tbl-cap: "Examples of replicated crossover designs."
+#| echo: false
+
+replicated_ex <- data.frame(
+  Trial = c("Albendazole bioequivalence", "Desmopressin nasal spray bioequivalence"),
+  Registry = c("NCT06201559", "PMID 14564429"),
+  Design = c("4-period, 2-sequence full replicate (TRTR / RTRT)",
+             "4-period, 2-sequence replicate"),
+  Key_Feature = c(
+    "Test and reference 400 mg tablets each given twice per participant, enabling intra-subject variability estimation for both formulations",
+    "High PK variability of intranasal peptides would have made a 2-period design impractically large; each formulation given twice with ≥ 1-week washout"
+  )
+)
+
+styled_table(replicated_ex,
+  col.names = c("Trial", "Registry", "Design", "Key Feature"),
+  align = c("l", "l", "l", "l"), font_size = 12) |>
+  row_spec(0, background = clr_trt_A, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "11em") |>
+  column_spec(2, width = "7em") |>
+  column_spec(3, width = "12em") |>
+  column_spec(4, width = "20em")
+```
+
+## Partial replicate (3-period, 2-treatment)
+
+An intermediate between the standard crossover and the full replicate: the reference is given twice, the test once, so reference within-subject variability is estimable with one fewer period.
+
+```{r}
+#| label: fig-partial-replicate
+#| fig-cap: "Partially replicated three-period design (TRR / RTR / RRT)."
+#| fig-height: 3.6
+#| fig-width: 10
+#| echo: false
+
+partial_df <- data.frame(
+  Sequence = rep(c("Sequence 1 (TRR)", "Sequence 2 (RTR)",
+                   "Sequence 3 (RRT)"), each = 5),
+  x_start  = rep(c(1.0, 2.0, 2.4, 3.4, 3.8), 3),
+  x_end    = rep(c(2.0, 2.4, 3.4, 3.8, 4.8), 3),
+  Label    = c("Test", "W", "Ref",  "W", "Ref",
+               "Ref",  "W", "Test", "W", "Ref",
+               "Ref",  "W", "Ref",  "W", "Test"),
+  fill     = c("T", "W", "R", "W", "R",
+               "R", "W", "T", "W", "R",
+               "R", "W", "R", "W", "T")
+)
+
+xo_schematic(partial_df,
+  seq_levels  = c("Sequence 1 (TRR)", "Sequence 2 (RTR)", "Sequence 3 (RRT)"),
+  fill_values = c("T" = clr_trt_A, "R" = clr_trt_B, "W" = clr_washout),
+  fill_labels = c("Reference", "Test", "Washout"),
+  text_size   = 3.2)
+```
+
+**Captopril bioequivalence (NCT04878315)** used exactly this FDA-recommended structure, giving the reference twice to support reference-scaled assessment while sparing participants a fourth period.
+
+**Ibandronic acid bioequivalence** (*Drugs in R&D*, 2014) used the same three-way, reference-replicated family with a 14-day washout, single-dose, open-label, fasting.
+
+## Williams designs
+
+Used when three or more treatments need simultaneous within-subject comparison with first-order carryover balance.
+
+```{r}
+#| label: tbl-williams-examples
+#| tbl-cap: "Examples of Williams design trials."
+#| echo: false
+
+williams_ex <- data.frame(
+  Trial = c("Naloxone PK evaluation", "Centanafadine thorough QT study"),
+  Registry = c("NCT05363501", "Published (Otsuka / Supernus)"),
+  Design = c("4-period, 4-sequence Williams design",
+             "3-period, 6-sequence Williams square"),
+  Treatments = c("Naloxone nasal swab, nasal spray, intramuscular injection",
+                 "Centanafadine, placebo, moxifloxacin (positive control)"),
+  Key_Feature = c(
+    "Registered explicitly as a balanced 4-way Williams crossover; each formulation preceded and followed every other equally often",
+    "Double-blind, full-block Williams square in 30 healthy adults, randomisation stratified by sex"
+  )
+)
+
+styled_table(williams_ex,
+  col.names = c("Trial", "Reference", "Design", "Treatments", "Key Feature"),
+  align = c("l", "l", "l", "l", "l"), font_size = 11) |>
+  row_spec(0, background = clr_accent, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "9em") |>
+  column_spec(2, width = "8em") |>
+  column_spec(3, width = "9em") |>
+  column_spec(4, width = "11em") |>
+  column_spec(5, width = "15em")
+```
+
+## Three treatments, three periods
+
+```{r}
+#| label: tbl-3x3-examples
+#| tbl-cap: "Three-period, three-treatment crossover trials."
+#| echo: false
+
+three_by_three <- data.frame(
+  Trial = c("PT007 asthma study", "Tacrine for Alzheimer's disease",
+            "BADGER — paediatric asthma step-up"),
+  Registry = c("NCT06644924", "Peace & Koch, Biometrics 1993",
+               "NCT00395304 (Lemanske et al., NEJM 2010)"),
+  Treatments = c("AS MDI, placebo MDI, Ventolin Evohaler",
+                 "Placebo, tacrine 40 mg/day, tacrine 80 mg/day",
+                 "LABA step-up, ICS step-up, LTRA step-up"),
+  Key_Feature = c(
+    "3–7 day washout between periods; FEV₁ as primary endpoint",
+    "Sequences restricted for safety so the higher dose never preceded the lower — balance deliberately sacrificed to clinical constraint",
+    "Each child received all three therapies; LABA was most often best at the population level, but many individual children responded best to ICS or LTRA — heterogeneity a parallel design would have hidden"
+  )
+)
+
+styled_table(three_by_three,
+  col.names = c("Trial", "Reference", "Treatments", "Key Feature"),
+  align = c("l", "l", "l", "l"), font_size = 12) |>
+  row_spec(0, background = clr_pos, color = "white", bold = TRUE) |>
+  column_spec(1, bold = TRUE, width = "10em") |>
+  column_spec(2, width = "10em") |>
+  column_spec(3, width = "11em") |>
+  column_spec(4, width = "20em")
+```
+
+## Balaam's design
+
+Two periods, four sequences. The same-treatment arms (AA, BB) let you estimate the direct treatment effect *and* the carryover effect consistently — the alternative route to the problem multi-period designs solve.
+
+```{r}
+#| label: fig-balaam-schematic
+#| fig-cap: "Balaam's design (AA / AB / BA / BB)."
+#| fig-height: 3.8
+#| fig-width: 10
+#| echo: false
+
+balaam_df <- data.frame(
+  Sequence = rep(c("Sequence 1 (AA)", "Sequence 2 (AB)",
+                   "Sequence 3 (BA)", "Sequence 4 (BB)"), each = 3),
+  x_start  = rep(c(1.0, 2.0, 2.4), 4),
+  x_end    = rep(c(2.0, 2.4, 3.4), 4),
+  Label    = c("Trt A", "W", "Trt A", "Trt A", "W", "Trt B",
+               "Trt B", "W", "Trt A", "Trt B", "W", "Trt B"),
+  fill     = c("A", "W", "A", "A", "W", "B",
+               "B", "W", "A", "B", "W", "B")
+)
+
+xo_schematic(balaam_df,
+  seq_levels  = c("Sequence 1 (AA)", "Sequence 2 (AB)",
+                  "Sequence 3 (BA)", "Sequence 4 (BB)"),
+  fill_values = c("A" = clr_trt_A, "B" = clr_trt_B, "W" = clr_washout),
+  fill_labels = c("Treatment A", "Treatment B", "Washout"),
+  text_size   = 3.5)
+```
+
+A montelukast trial in perennial allergic rhinitis (*Allergy Asthma Proc*, 2008) used this structure to assess nasal congestion and sleep disturbance against placebo, with the same-treatment sequences supporting formal carryover estimation.
+
+:::
+
+# Summary {#sec-conclusion}
+
+Multi-crossover designs extend the standard crossover into something considerably more informative: treatment-specific within-subject variances, carryover that can be estimated rather than assumed away, more than two treatments at once, and real tolerance of dropout.
+
+That comes at a price — longer trials, harder logistics, more demanding assumptions, and a persistent risk of carryover and functional unblinding. Use them when the assumptions are genuinely defensible, not merely convenient.
+
+```{r}
+#| label: tbl-conclusion-summary
+#| tbl-cap: "Multi-crossover designs at a glance."
+#| echo: false
+
+conclusion_df <- data.frame(
+  Dimension = c("Use when", "", "", "",
+                "Avoid when", "", "",
+                "Statistical", "", "",
+                "Operational", "", ""),
+  Guidance = c(
+    "The condition is chronic, stable and symptomatically managed",
+    "Treatment effects are reversible and short-acting",
+    "Between-subject variability is high relative to within-subject",
+    "The eligible population is small (rare disease, paediatric subgroups)",
+    "The treatment is curative or disease-modifying",
+    "The disease is progressive, episodic or self-limiting",
+    "Adequate washout cannot be assured",
+    "Pre-specify the estimand, then choose the model to match it",
+    "Design for washout; analyse under no-carryover, with a carryover-adjusted sensitivity analysis",
+    "Mixed models under MAR as primary; pre-specify MNAR sensitivity analyses; simulate before committing",
+    "Plan sequence-specific drug supply across multiple switches per participant",
+    "Train sites on period-specific baselines and washout compliance",
+    "Inflate the sample size for dropout across all periods"
+  )
+)
+
+styled_table(conclusion_df, col.names = c("", ""), align = c("l", "l")) |>
+  column_spec(1, bold = TRUE, width = "12em") |>
+  column_spec(2, width = "36em") |>
+  row_spec(c(1, 5, 8, 11), background = "#EBF5FB") |>
+  pack_rows("Applicability", 1, 4, bold = TRUE,
+            label_row_css = "background-color: #2C3E50; color: #fff;") |>
+  pack_rows("Contraindications", 5, 7, bold = TRUE,
+            label_row_css = "background-color: #2C3E50; color: #fff;") |>
+  pack_rows("Statistical", 8, 10, bold = TRUE,
+            label_row_css = "background-color: #2C3E50; color: #fff;") |>
+  pack_rows("Operational", 11, 13, bold = TRUE,
+            label_row_css = "background-color: #2C3E50; color: #fff;")
+```
+
+# References
+
+## Trials and examples
+
+- [Albendazole bioequivalence study (NCT06201559)](https://clinicaltrials.gov/study/NCT06201559)
+- [Desmopressin nasal spray replicate bioequivalence study (PMID 14564429)](https://europepmc.org/article/MED/14564429)
+- [Naloxone pharmacokinetic evaluation (NCT05363501)](https://clinicaltrials.gov/study/NCT05363501)
+- [Captopril bioequivalence study (NCT04878315)](https://ichgcp.net/clinical-trials-registry/NCT04878315)
+- [Ibandronic acid bioequivalence — *Drugs in R&D*, 2014](https://pmc.ncbi.nlm.nih.gov/articles/PMC4070455/)
+- [Centanafadine thorough QT study](https://pmc.ncbi.nlm.nih.gov/articles/PMC12314114/)
+- [Montelukast in perennial allergic rhinitis — *Allergy Asthma Proc*, 2008](https://doi.org/10.2500/aap.2008.29.3097)
+- [Contact lens corneal endothelial response (modified Balaam's design)](https://pubmed.ncbi.nlm.nih.gov/18997540/)
+- [PT007 asthma study (NCT06644924)](https://clinicaltrials.gov/study/NCT06644924)
+- [BADGER — paediatric asthma step-up therapy (Lemanske et al., NEJM 2010)](https://www.nejm.org/doi/pdf/10.1056/NEJMoa1001278)
+- [Peace & Koch, 1993 — three-period crossover where the high dose cannot be given first](https://europepmc.org/article/MED/8485531)
+
+## Methodological
+
+- Williams, E. J. (1949). *Experimental designs balanced for the estimation of residual effects of treatments.* Aust J Sci Res A, 2, 149–168.
+- Grizzle, J. E. (1965). *The two-period change-over design and its use in clinical trials.* Biometrics, 21, 467–480.
+- Senn, S. J. (1993). *Cross-over Trials in Clinical Research* (1st ed.). Wiley.
+- Senn, S. J. (2002). *Cross-over Trials in Clinical Research* (2nd ed.). Wiley.
+- Senn, S. J. (2001). *Cross-over trials in drug development: theory and practice.* J Stat Plan Inference, 96, 29–40.
+- Jones, B., & Kenward, M. G. (2015). *Design and Analysis of Cross-Over Trials* (3rd ed.). Chapman & Hall/CRC.
+- Wellek, S., & Blettner, M. (2012). *On the proper use of the crossover design in clinical trials.* Dtsch Arztebl Int, 109(15), 276–281.
+- Hemming, K., Taljaard, M., Weijer, C., & Forbes, A. B. (2020). *Use of multiple period, cluster randomised, crossover trial designs for comparative effectiveness research.* BMJ, 371:m3800.
+- ICH E9(R1). *Addendum on estimands and sensitivity analysis in clinical trials.*
+- FDA (2021). *Bioequivalence Studies With Pharmacokinetic Endpoints for Drugs Submitted Under an ANDA.*
+- FDA (2022). *Statistical Approaches to Establishing Bioequivalence* (draft revision 1).
+- [Latin squares and Williams designs — reference page](https://statpages.info/latinsq.html)
