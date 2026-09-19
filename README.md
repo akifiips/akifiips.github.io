@@ -4,7 +4,7 @@ A minimal Quarto website for biostatistics articles and a captioned photo galler
 
 ## Open in RStudio
 
-Open `Akif-Mustafa.Rproj`. Install Quarto if it is not already available in your RStudio installation. The current `dist/` folder is a ready-to-publish website. The first version uses the supplied, already-rendered RMST article, so its figures and numerical results are preserved.
+Open `Akif-Mustafa.Rproj`. Install Quarto if it is not already available in your RStudio installation. The current `dist/` folder is a ready-to-publish website. The supplied, already-rendered article pages are kept alongside their editable sources so figures and numerical results are preserved.
 
 The editable RMST source was recovered from its HTML. R and Quarto were unavailable in the creation environment, so the recovered R code has **not** been re-executed here. Its original publication date, 1 June 2026, is fixed in the source.
 
@@ -54,7 +54,7 @@ format:
 ---
 ```
 
-Write your article below the metadata and keep its images/data alongside it. Use the actual intended publication date. Render the site, then commit and push the source and `dist/` together. If introducing a new category, add its filter button in `blog.qmd`; existing topic filters are All, Survival analysis, Clinical trials and R. Update `index.qmd`'s listing `contents` to change the featured article.
+Write your article below the metadata and keep its images/data alongside it. Use the actual intended publication date. Render the site, then commit and push the source and `dist/` together. If introducing a new category, add its filter button in `blog.qmd`; the current topic filters are All, Survival analysis, Clinical trials, R, Bayesian methods and Adaptive designs. Update `index.qmd`'s listing `contents` to change the featured article.
 
 ## Add photographs
 
@@ -87,3 +87,7 @@ No comments, newsletter, analytics, or photo-upload service is included.
 The editable source is `posts/multicross-design/index.qmd`; its supplied rendered HTML is integrated at `dist/posts/multicross-design/index.html`, with shared navigation, a collapsible table of contents, and site search. Figures and computed results are preserved from the supplied HTML, without rerunning R. The publication date is fixed at 11 September 2026.
 
 The GitHub Actions workflow publishes `dist/` without rendering Quarto. Uploading a `.qmd` alone will not update the live site. After future edits, render the whole site locally and commit both the source and updated `dist/`, including the blog listing and search index. The MultiCross source additionally requires the R package `scales`.
+
+## BATTLE trial case study
+
+The BATTLE trial case study is available at `posts/battle-trial-case-study/index.qmd`, with its supplied self-contained HTML render retained at `posts/BATTLE/battle-trial-case-study.html`. The site-styled wrapper preserves the article’s figures, tables, equations and references while using the shared navigation, typography, table of contents and search behavior. Its published date is fixed at 10 September 2026.
