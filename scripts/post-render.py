@@ -57,7 +57,8 @@ for path in OUT.rglob("*.html"):
     if "assets/site.js" not in content:
         content = content.replace("</body>", f'<script src="{relative_root}/assets/site.js"></script></body>')
     path.write_text(content)
-    if "posts" in path.relative_to(OUT).parts:
+    relative_path = path.relative_to(OUT)
+    if "posts" in relative_path.parts and path.name == "index.html":
         parser = ArticleText()
         parser.feed(content)
         entries.append({

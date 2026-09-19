@@ -9,7 +9,7 @@
   });
   const toc = document.querySelector('#TOC');
   const title = document.querySelector('#title-block-header');
-  if (toc && title) {
+  if (toc && title && !toc.closest('.article-toc')) {
     const old = toc.parentElement;
     const details = document.createElement('details');
     details.className = 'article-toc';
@@ -22,6 +22,16 @@
   document.querySelectorAll('.filter').forEach(button => button.addEventListener('click', () => {
     document.querySelectorAll('.filter').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
     document.querySelectorAll('.post-row[data-categories]').forEach(row => { row.hidden = button.dataset.filter !== 'all' && !row.dataset.categories.split('|').includes(button.dataset.filter); });
+  }));
+  document.querySelectorAll('.code-copy-button').forEach(button => button.addEventListener('click', async () => {
+    const code = button.closest('.sourceCode, pre')?.querySelector('code');
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code.innerText);
+      const label = button.getAttribute('title') || 'Copy to Clipboard';
+      button.setAttribute('title', 'Copied');
+      setTimeout(() => button.setAttribute('title', label), 1200);
+    } catch (_) { /* Clipboard access is optional. */ }
   }));
   const dialog = document.querySelector('.search-dialog');
   if (!dialog) return;
