@@ -6,3 +6,13 @@
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 .code-copy-button{float:right;border:1px solid var(--line);border-radius:2px;background:var(--paper);color:var(--muted);font-size:12px;padding:2px 7px;cursor:pointer}.code-copy-button::after{content:'Copy'}.code-copy-button:hover{color:var(--accent);border-color:var(--accent)}
+
+/* Regulatory guide: wide reference tables scroll within the article on mobile. */
+.regulatory-article{overflow-wrap:anywhere}
+.regulatory-article .article-table{max-width:100%;overflow-x:auto;margin:24px 0 32px}
+.regulatory-article .article-table:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.regulatory-article table{width:100%;min-width:620px;border-collapse:collapse;line-height:1.7}
+.regulatory-article th,.regulatory-article td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.regulatory-article th{background:var(--soft);font-weight:600}
+.regulatory-article blockquote{margin:0 0 32px;padding:4px 0 4px 20px;border-left:3px solid var(--accent);color:var(--muted);font-size:14px}
+.regulatory-article blockquote p:last-child{margin-bottom:0}
