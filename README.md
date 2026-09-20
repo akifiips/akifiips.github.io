@@ -54,7 +54,7 @@ format:
 ---
 ```
 
-Write your article below the metadata and keep its images/data alongside it. Use the actual intended publication date. Render the site, then commit and push the source and `dist/` together. If introducing a new category, add its filter button in `blog.qmd`; the current topic filters are All, Survival analysis, Clinical trials, R, Bayesian methods and Adaptive designs. Update `index.qmd`'s listing `contents` to change the featured article.
+Write your article below the metadata and keep its images/data alongside it. Use the actual intended publication date. Render the site, then commit and push the source and `dist/` together. If introducing a new category, add its filter button in `blog.qmd`; the current topic filters are All, Survival analysis, Clinical trials, R, Bayesian methods, Adaptive designs and Regulatory communication. Update `index.qmd`'s listing `contents` to change the featured article.
 
 ## Add photographs
 
@@ -91,3 +91,9 @@ The GitHub Actions workflow publishes `dist/` without rendering Quarto. Uploadin
 ## BATTLE trial case study
 
 The BATTLE trial case study is available at `posts/battle-trial-case-study/index.qmd`, with its supplied self-contained HTML render retained at `posts/BATTLE/battle-trial-case-study.html`. The site-styled wrapper preserves the article’s figures, tables, equations and references while using the shared navigation, typography, table of contents and search behavior. Its published date is fixed at 10 September 2026.
+
+## Regulatory communications guide
+
+The editable site wrapper is `posts/regulatory-communications-practical-guide/index.qmd`; the original supplied HTML remains unchanged at `posts/Regulatory_Communication/regulatory-communications-practical-guide.html`. The published page at `dist/posts/regulatory-communications-practical-guide/index.html` uses the shared site navigation, typography, collapsible table of contents and search. The article text, six tables and reference links are preserved, with scrollable tables for narrow screens. Its original publication date is fixed at 19 September 2026. The guide appears in the Blog under Clinical trials and Regulatory communication.
+
+For future content edits, update the site wrapper and render the website, then commit the updated source and `dist/` together. Replacing the original standalone HTML alone does not update the published page.
